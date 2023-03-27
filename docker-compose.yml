@@ -1,0 +1,48 @@
+version: '3.7'
+services:
+  web:
+    container_name: web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8000:80
+      - 8001:443
+    image: ramageek/laravel82
+    environment:
+      PHP_POOL_NAME: "laravel_php"
+      AUTORUN_LARAVEL_MIGRATION: true
+      SSL_MODE: "off"
+    volumes:
+      - .:/var/www/html/:cached
+    networks:
+      - laravel
+  horizon:
+    container_name: horizon
+    image: ramageek/laravel82
+    # Switch to "webuser" before running `php artisan`
+    # Declare command in list manner for environment variable expansion
+    volumes:
+      - .:/var/www/html/:cached
+    command: ["su", "webuser", "-c", "php artisan horizon"]
+    environment:
+      PHP_POOL_NAME: "laravel_horizon"
+      AUTORUN_LARAVEL_STORAGE_LINK: false
+    networks:
+      - laravel
+  redis:
+    container_name: redis
+    image: redis:alpine
+    networks:
+      - laravel
+  mailpit:
+    container_name: mail_server
+    image: 'axllent/mailpit:latest'
+    ports:
+      - '${FORWARD_MAILPIT_PORT:-1025}:1025'
+      - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
+    networks:
+      - laravel
+networks:
+  laravel:
+    driver: bridge
